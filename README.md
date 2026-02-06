@@ -41,13 +41,13 @@ Verifiy Jenkins installation: jenkins --version
 6. Install Docker on Ubuntu
 (Reference URL for commands: https://docs.docker.com/engine/install/ubuntu/)
 
-# Add Docker's official GPG key:
+## Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
-# Add the repository to Apt sources:
+## Add the repository to Apt sources:
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
@@ -112,133 +112,10 @@ Before pasting the pipeline script, do the following changes in the script
 1. In the stage 'Tag and Push to DockerHub', give your docker-hub username. Similar thing you should do in 'DockerScoutImage', 'Deploy to container' stages
 2. In post actions stage in pipeline, make sure to give the email id you have configured in jenkins.
 
-*********************
-Pipeline Script
-*********************
-pipeline {
-    agent any
-    tools {
-        jdk 'jdk17'
-        nodejs 'node23'
-    }
-    environment {
-        SCANNER_HOME=tool 'sonar-scanner'
-    }
-    stages {
-        stage ("clean workspace") {
-            steps {
-                cleanWs()
-            }
-        }
-        stage ("Git Checkout") {
-            steps {
-                git 'https://github.com/patilrahul99/DevOps-Project-Zomato-clone.git'
-            }
-        }
-        stage("Sonarqube Analysis"){
-            steps{
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=zomato \
-                    -Dsonar.projectKey=zomato '''
-                }
-            }
-        }
-        stage("Code Quality Gate"){
-           steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
-                }
-            } 
-        }
-        stage("Install NPM Dependencies") {
-            steps {
-                sh "npm install"
-            }
-        }
-        stage('OWASP FS SCAN') {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit -n', odcInstallation: 'DP-Check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-    }
-}
-        stage ("Trivy File Scan") {
-            steps {
-                sh "trivy fs . > trivy.txt"
-            }
-        }
-        stage ("Build Docker Image") {
-            steps {
-                sh "docker build -t zomato ."
-            }
-        }
-        stage ("Tag & Push to DockerHub") {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker') {
-                        sh "docker tag zomato rp00999/zomato:latest "
-                        sh "docker push rp00999/zomato:latest "
-                    }
-                }
-            }
-        }
-        stage('Docker Scout Image') {
-            steps {
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
-                       sh 'docker-scout quickview rp00999/zomato:latest'
-                       sh 'docker-scout cves rp00999/zomato:latest'
-                       sh 'docker-scout recommendations rp00999/zomato:latest'
-                   }
-                }
-            }
-        }
-        stage ("Deploy to Container") {
-            steps {
-                sh 'docker run -d --name zomato -p 3000:3000 kastrov/zomato:latest'
-            }
-        }
-    }
-    post {
-    always {
-        emailext attachLog: true,
-            subject: "'${currentBuild.result}'",
-            body: """
-                <html>
-                <body>
-                    <div style="background-color: #FFA07A; padding: 10px; margin-bottom: 10px;">
-                        <p style="color: white; font-weight: bold;">Project: ${env.JOB_NAME}</p>
-                    </div>
-                    <div style="background-color: #90EE90; padding: 10px; margin-bottom: 10px;">
-                        <p style="color: white; font-weight: bold;">Build Number: ${env.BUILD_NUMBER}</p>
-                    </div>
-                    <div style="background-color: #87CEEB; padding: 10px; margin-bottom: 10px;">
-                        <p style="color: white; font-weight: bold;">URL: ${env.BUILD_URL}</p>
-                    </div>
-                </body>
-                </html>
-            """,
-            to: 'addyouremail@gmail.com',
-            mimeType: 'text/html',
-            attachmentsPattern: 'trivy.txt'
-        }
-    }
-}
-
-
-
-If the build stage of "OWASP FS SCAN" shows 'UNSTABLE BUILD' replace the below script in OWASP FS SCAN stage
-stage('OWASP FS SCAN') {
-    steps {
-        dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --update -n', odcInstallation: 'DP-Check'
-        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-    }
-}
-
-
 Let the pipeline gets built. Meanwhile we will create VMs for monitoring.
 
 ------------------------------------------------------------
-MONITORING OF APPLICATION
+## MONITORING OF APPLICATION
 ------------------------------------------------------------
 15. Launch VM (Name: Monitoring Server, Ubuntu 24.04, t2.large, Select the SG created in the Step 1, EBS: 30GB)
 We will install Grafana, Prometheus, Node Exporter in the above instance and then we will monitor
@@ -462,7 +339,7 @@ Lets add the data source;
 Click on Dashboards in the left pane, you can see both the dashboards you have just added.
 
 ---------------------------------------------
-Creation of EKS cluster
+## Creation of EKS cluster
 ---------------------------------------------
 We need to run the same application on K8S cluster. In order to do that we need to create a K8S cluster. I will create the cluster using EKS service in AWS using VS code editor.
 
@@ -471,7 +348,7 @@ Note 2: Run the VS Code Editor/Power Shell/Command Prompt as Administrator, to a
 
 Open vs code editor and execute the below commands; 
 Step 01: Create EKS Cluster using eksctl
-# Create Cluster. I will keep the cluster name as "rpcluster"
+## Create Cluster. I will keep the cluster name as "rpcluster"
 eksctl create cluster --name=rpcluster \
                       --region=ap-northeast-1 \
                       --zones=ap-northeast-1a,ap-northeast-1c \
@@ -500,7 +377,7 @@ It will take atleast 20-25 minutes for the cluster to create.
 To verify the cluster creation ---> Goto Cloud Formation service in AWS ----> You should see a stack got created with the name "rpcluster". Make sure in the vs code editor the cluster will get created. As said earlier it will take atleast 20 minutes.
 Once the cluster is ready, you will see "EKS Cluster "rpcluster" in "us-east-1" region is ready" in vs code editor. wait till you see this.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# Get List of clusters
+## Get List of clusters
 eksctl get cluster
 
 Execute the below in vs code editor;
@@ -509,13 +386,13 @@ Step 02: Create & Associate IAM OIDC Provider for our EKS Cluster
 To enable and use AWS IAM roles for Kubernetes service accounts on our EKS cluster, we must create & associate OIDC identity provider.
 To do so using eksctl we can use the below commands.
 
-# Template
+## Template
 eksctl utils associate-iam-oidc-provider \
     --region region-code \
     --cluster <cluster-name> \
     --approve
 
-# Replace with region & cluster name
+## Replace with region & cluster name
 eksctl utils associate-iam-oidc-provider \
     --region ap-northeast-1 \
     --cluster kastrocluster \
@@ -533,7 +410,7 @@ eksctl utils associate-iam-oidc-provider `
 Step 03: Create Node Group with additional Add-Ons in Public Subnets
 These add-ons will create the respective IAM policies for us automatically within our Node Group role.
 
-# Create Public Node Group   
+## Create Public Node Group   
 eksctl create nodegroup --cluster=rpcluster \
                        --region=ap-northeast-1 \
                        --name=rpdemo-ng-public1 \
@@ -579,19 +456,19 @@ Goto EKS Service in AWS and check for the cluster creation
 Optional - do it at the end of complete demo
 ******************************************
 Step 06: Delete Node Group
-# List EKS Clusters
+## List EKS Clusters
 eksctl get clusters
 
-# Capture Node Group name
+## Capture Node Group name
 eksctl get nodegroup --cluster=<clusterName>
 eksctl get nodegroup --cluster=rpcluster
 
-# Delete Node Group
+## Delete Node Group
 eksctl delete nodegroup --cluster=<clusterName> --name=<nodegroupName>
 eksctl delete nodegroup --cluster=rpcluster --name=rpdemo-ng-public1
 
 Step 07: Delete Cluster
-# Delete Cluster
+## Delete Cluster
 eksctl delete cluster <clusterName>
 eksctl delete cluster rpcluster
 ********************************************************************************
@@ -676,7 +553,6 @@ echo $env:ARGO_PWD
 
 You will see the password. copy and paste it in the argo cd homepage --->login
 
-<Follow the process as explained in the video>
 
 Note: In the repo, in Kubernetes folder, in the deployment.yml file, in the containers section change the dockerhub username
 
