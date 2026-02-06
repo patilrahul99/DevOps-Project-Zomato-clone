@@ -395,7 +395,7 @@ eksctl utils associate-iam-oidc-provider \
 ## Replace with region & cluster name
 eksctl utils associate-iam-oidc-provider \
     --region ap-northeast-1 \
-    --cluster kastrocluster \
+    --cluster rpcluster \
     --approve
 
 (OR)
@@ -429,7 +429,7 @@ eksctl create nodegroup --cluster=rpcluster \
                        --alb-ingress-access
 
 (OR)
-eksctl create nodegroup --cluster=rpcluster --region=ap-northeast-1 --name=kastrodemo-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=devops-key --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access
+eksctl create nodegroup --cluster=rpcluster --region=ap-northeast-1 --name=rpdemo-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=devops-key --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access
 
 (OR)
 eksctl create nodegroup --cluster=rpcluster `
